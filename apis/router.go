@@ -45,6 +45,7 @@ func Run() error {
 
 	api := router.Group("/api/onvif")
 	{
+		api.GET("/check", middle.ApiKeyAuth(), onvif.AuthCheck)
 		api.GET("/devices", middle.ApiKeyAuth(), onvif.ListDevices)
 		api.GET("/device/info", middle.ApiKeyAuth(), onvif.ListDeviceInfo)
 		api.GET("/device/profile", middle.ApiKeyAuth(), onvif.ListDeviceProfile)
