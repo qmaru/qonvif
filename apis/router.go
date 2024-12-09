@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"qonvif/apis/middle"
 	"qonvif/apis/onvif"
 	"qonvif/configs"
 	"qonvif/services/logs"
@@ -25,6 +26,11 @@ func Run() error {
 		return err
 	}
 
+	basicAuth, err := middle.BasicAuth()
+	if err != nil {
+		return err
+	}
+
 	listenAddr := fmt.Sprintf("%s:%d", configs.Config.Server.Host, configs.Config.Server.Port)
 	log.Println("Listen: " + listenAddr)
 
@@ -36,11 +42,11 @@ func Run() error {
 
 	api := router.Group("/api/onvif")
 	{
-		api.GET("/devices", onvif.ListDevices)
-		api.GET("/device/info", onvif.ListDeviceInfo)
-		api.GET("/device/profile", onvif.ListDeviceProfile)
-		api.GET("/device/streamurl", onvif.ListDeviceStreamurl)
-		api.POST("/device/ptz/control", onvif.DeviceControl)
+		api.GET("/devices", basicAuth, onvif.ListDevices)
+		api.GET("/device/info", basicAuth, onvif.ListDeviceInfo)
+		api.GET("/device/profile", basicAuth, onvif.ListDeviceProfile)
+		api.GET("/device/streamurl", basicAuth, onvif.ListDeviceStreamurl)
+		api.POST("/device/ptz/control", basicAuth, onvif.DeviceControl)
 	}
 
 	return router.Run(listenAddr)

@@ -13,8 +13,10 @@ type DeviceConfig struct {
 }
 
 type ServerConfig struct {
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
 }
 
 type Config struct {
