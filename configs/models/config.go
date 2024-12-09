@@ -1,15 +1,15 @@
 package models
 
 type DeviceInfo struct {
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
+	Host     string `toml:"host" json:"host"`
+	Port     int    `toml:"port" json:"port"`
+	Username string `toml:"username" json:"username"`
+	Password string `toml:"password" json:"password"`
 }
 
 type DeviceConfig struct {
-	Name   string     `toml:"name"`
-	Device DeviceInfo `toml:"device"`
+	Name   string     `toml:"name" json:"name"`
+	Device DeviceInfo `toml:"device" json:"device"`
 }
 
 type ServerConfig struct {

@@ -8,24 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PtzAxes struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
-
 func ListDevices(c *gin.Context) {
-	data := make([]string, 0)
-	for _, device := range configs.Config.Devices {
-		data = append(data, device.Name)
-	}
-
-	common.JSONHandler(c, 1, "devices", data)
+	common.JSONHandler(c, 1, "devices", configs.Config.Devices)
 }
 
 func ListDeviceInfo(c *gin.Context) {
 	name := c.DefaultQuery("name", "")
 	if name == "" {
-		common.JSONHandler(c, 0, "name not found", []any{})
+		common.JSONHandler(c, 0, "device name not found", []any{})
 		return
 	}
 
@@ -47,7 +37,7 @@ func ListDeviceInfo(c *gin.Context) {
 func ListDeviceProfile(c *gin.Context) {
 	name := c.DefaultQuery("name", "")
 	if name == "" {
-		common.JSONHandler(c, 0, "name not found", []any{})
+		common.JSONHandler(c, 0, "device name not found", []any{})
 		return
 	}
 
@@ -71,7 +61,7 @@ func ListDeviceStreamurl(c *gin.Context) {
 	token := c.DefaultQuery("token", "")
 
 	if name == "" || token == "" {
-		common.JSONHandler(c, 0, "name or token not found", []any{})
+		common.JSONHandler(c, 0, "device name or token not found", []any{})
 		return
 	}
 
@@ -88,34 +78,4 @@ func ListDeviceStreamurl(c *gin.Context) {
 	}
 
 	common.JSONHandler(c, 1, "device stream url", streamData)
-}
-
-func DeviceControl(c *gin.Context) {
-	var axes PtzAxes
-
-	name := c.DefaultQuery("name", "")
-	if name == "" {
-		common.JSONHandler(c, 0, "name not found", []any{})
-		return
-	}
-
-	err := c.ShouldBindBodyWithJSON(&axes)
-	if err != nil {
-		common.JSONHandler(c, 0, "x or y error: "+err.Error(), []any{})
-		return
-	}
-
-	client, err := onvif.NewClient(name)
-	if err != nil {
-		common.JSONHandler(c, 0, "new client error: "+err.Error(), []any{})
-		return
-	}
-
-	status, err := client.PTZGoToAny(axes.X, axes.Y)
-	if err != nil {
-		common.JSONHandler(c, 0, "move error: "+err.Error(), []any{})
-		return
-	}
-
-	common.JSONHandler(c, 1, "control", status)
 }
