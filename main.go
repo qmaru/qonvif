@@ -1,14 +1,9 @@
 package main
 
 import (
-	"log"
-
-	"qonvif/apis"
+	"qonvif/cmd"
 )
 
 func main() {
-	err := apis.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	cmd.Execute()
 }

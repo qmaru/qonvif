@@ -1,10 +1,11 @@
 module qonvif
 
-go 1.23.1
+go 1.23
 
 require (
 	github.com/beevik/etree v1.1.0
 	github.com/gin-gonic/gin v1.10.0
+	github.com/jessevdk/go-flags v1.6.1
 	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/qmaru/minitools/v2 v2.1.5
 	github.com/qmaru/qlog v0.0.6
