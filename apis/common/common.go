@@ -11,3 +11,7 @@ func JSONHandler(c *gin.Context, status int, message string, data any) {
 		"data":    data,
 	})
 }
+
+func AuthAbortHandler(c *gin.Context) {
+	c.AbortWithStatus(401)
+}

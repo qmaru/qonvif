@@ -13,10 +13,9 @@ type DeviceConfig struct {
 }
 
 type ServerConfig struct {
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
+	Host   string `toml:"host"`
+	Port   int    `toml:"port"`
+	ApiKey string `toml:"api_key"`
 }
 
 type Config struct {

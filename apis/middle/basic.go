@@ -1,24 +1,29 @@
 package middle
 
 import (
-	"fmt"
-
+	"qonvif/apis/common"
 	"qonvif/configs"
 
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	username = configs.Config.Server.Username
-	password = configs.Config.Server.Password
+	ApiKey = configs.Config.Server.ApiKey
 )
 
-func BasicAuth() (gin.HandlerFunc, error) {
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("auth username or password is empty")
-	}
+func ApiKeyAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKey := c.GetHeader("X-API-Key")
+		if apiKey == "" {
+			common.AuthAbortHandler(c)
+			return
+		}
 
-	return gin.BasicAuth(gin.Accounts{
-		username: password,
-	}), nil
+		if apiKey != ApiKey {
+			common.AuthAbortHandler(c)
+			return
+		}
+
+		c.Next()
+	}
 }

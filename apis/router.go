@@ -9,6 +9,7 @@ import (
 	"qonvif/configs"
 	"qonvif/services/logs"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,11 +27,6 @@ func Run() error {
 		return err
 	}
 
-	basicAuth, err := middle.BasicAuth()
-	if err != nil {
-		return err
-	}
-
 	listenAddr := fmt.Sprintf("%s:%d", configs.Config.Server.Host, configs.Config.Server.Port)
 	log.Println("Listen: " + listenAddr)
 
@@ -38,15 +34,21 @@ func Run() error {
 	router.SetTrustedProxies(nil)
 	router.Use(gin.Recovery())
 	router.Use(logger)
-	router.Use(gin.Recovery())
+
+	corsConfig := cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods: cors.DefaultConfig().AllowMethods,
+		AllowHeaders: append(cors.DefaultConfig().AllowHeaders, "X-API-Key"),
+	}
+	router.Use(cors.New(corsConfig))
 
 	api := router.Group("/api/onvif")
 	{
-		api.GET("/devices", basicAuth, onvif.ListDevices)
-		api.GET("/device/info", basicAuth, onvif.ListDeviceInfo)
-		api.GET("/device/profile", basicAuth, onvif.ListDeviceProfile)
-		api.GET("/device/streamurl", basicAuth, onvif.ListDeviceStreamurl)
-		api.POST("/device/ptz/control", basicAuth, onvif.DeviceControl)
+		api.GET("/devices", middle.ApiKeyAuth(), onvif.ListDevices)
+		api.GET("/device/info", middle.ApiKeyAuth(), onvif.ListDeviceInfo)
+		api.GET("/device/profile", middle.ApiKeyAuth(), onvif.ListDeviceProfile)
+		api.GET("/device/streamurl", middle.ApiKeyAuth(), onvif.ListDeviceStreamurl)
+		api.POST("/device/ptz/control", middle.ApiKeyAuth(), onvif.DeviceControl)
 	}
 
 	return router.Run(listenAddr)

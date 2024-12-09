@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/beevik/etree v1.1.0
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/pelletier/go-toml/v2 v2.2.3

@@ -4,8 +4,7 @@ debug = true
 [server]
 host = "127.0.0.1"
 port = 8373
-username = ""
-password = ""
+api_key = "123456"
 
 [[devices]]
 name = "Living"
