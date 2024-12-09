@@ -12,6 +12,14 @@ go run main.go server
 docker run --rm -p 8373:8373 -v $(pwd)/configs:/configs ghcr.io/qmaru/qonvif:latest server
 ```
 
+## Player [option]
+
+```shell
+# config.toml
+[player]
+path = "/path/to/ffplay"
+```
+
 ## API reference
 
 ### Get all devices
@@ -46,6 +54,12 @@ curl --request GET \
   --header 'X-API-Key: api_key'
 ```
 
+```shell
+curl --request GET \
+  --url 'http://127.0.0.1:8373/api/onvif/device/streamurl?name=Living&token=profile_1&username=admin&password=PASSWORD' \
+  --header 'X-API-Key: api_key'
+```
+
 ### Send control command
 
 ```shell
@@ -59,6 +73,21 @@ curl --request POST \
     "x": 0.3,
     "y": 0.2
   }
+}
+'
+```
+
+### Play Stream
+
+```shell
+curl --request POST \
+  --url http://127.0.0.1:8373/api/onvif/play \
+  --header 'X-API-Key: api_key' \
+  --header 'content-type: application/json' \
+  --data '{
+  "url": "stream_url",
+  "width": "1280",
+  "height": "720"
 }
 '
 ```

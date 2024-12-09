@@ -6,6 +6,7 @@ import (
 
 	"qonvif/apis/middle"
 	"qonvif/apis/onvif"
+	"qonvif/apis/player"
 	"qonvif/configs"
 	"qonvif/services/logs"
 
@@ -37,8 +38,8 @@ func Run() error {
 
 	corsConfig := cors.Config{
 		AllowAllOrigins: true,
-		AllowMethods: cors.DefaultConfig().AllowMethods,
-		AllowHeaders: append(cors.DefaultConfig().AllowHeaders, "X-API-Key"),
+		AllowMethods:    cors.DefaultConfig().AllowMethods,
+		AllowHeaders:    append(cors.DefaultConfig().AllowHeaders, "X-API-Key"),
 	}
 	router.Use(cors.New(corsConfig))
 
@@ -49,6 +50,7 @@ func Run() error {
 		api.GET("/device/profile", middle.ApiKeyAuth(), onvif.ListDeviceProfile)
 		api.GET("/device/streamurl", middle.ApiKeyAuth(), onvif.ListDeviceStreamurl)
 		api.POST("/device/ptz/control", middle.ApiKeyAuth(), onvif.DeviceControl)
+		api.POST("/play", middle.ApiKeyAuth(), player.PlayStram)
 	}
 
 	return router.Run(listenAddr)

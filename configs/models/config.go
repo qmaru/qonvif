@@ -18,9 +18,14 @@ type ServerConfig struct {
 	ApiKey string `toml:"api_key"`
 }
 
+type PlayerConfig struct {
+	Path string `toml:"path"`
+}
+
 type Config struct {
 	Desc    string         `toml:"desc"`
 	Debug   bool           `toml:"debug"`
 	Server  ServerConfig   `toml:"server"`
 	Devices []DeviceConfig `toml:"devices"`
+	Player  PlayerConfig   `toml:"player"`
 }

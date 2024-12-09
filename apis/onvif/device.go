@@ -1,12 +1,28 @@
 package onvif
 
 import (
+	URL "net/url"
+
 	"qonvif/apis/common"
 	"qonvif/configs"
 	"qonvif/services/onvif"
 
 	"github.com/gin-gonic/gin"
 )
+
+func addAuthtoUrl(url, username, password string) string {
+	if username == "" && password == "" {
+		return url
+	}
+
+	urlParse, err := URL.Parse(url)
+	if err != nil {
+		return ""
+	}
+
+	urlParse.User = URL.UserPassword(username, password)
+	return urlParse.String()
+}
 
 func ListDevices(c *gin.Context) {
 	common.JSONHandler(c, 1, "devices", configs.Config.Devices)
@@ -59,6 +75,8 @@ func ListDeviceProfile(c *gin.Context) {
 func ListDeviceStreamurl(c *gin.Context) {
 	name := c.DefaultQuery("name", "")
 	token := c.DefaultQuery("token", "")
+	username := c.DefaultQuery("username", "")
+	password := c.DefaultQuery("password", "")
 
 	if name == "" || token == "" {
 		common.JSONHandler(c, 0, "device name or token not found", []any{})
@@ -77,5 +95,6 @@ func ListDeviceStreamurl(c *gin.Context) {
 		return
 	}
 
+	streamData.Url = addAuthtoUrl(streamData.Url, username, password)
 	common.JSONHandler(c, 1, "device stream url", streamData)
 }

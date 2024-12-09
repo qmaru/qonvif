@@ -9,3 +9,6 @@ api_key = "123456"
 [[devices]]
 name = "Living"
 device = { host = "", port = 80, username = "admin", password = "" }
+
+[player]
+path = ""
