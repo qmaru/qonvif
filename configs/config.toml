@@ -1,0 +1,10 @@
+desc = "qonvif"
+debug = true
+
+[server]
+host = "127.0.0.1"
+port = 8373
+
+[[devices]]
+name = "Living"
+device = { host = "", port = 80, username = "admin", password = "" }
