@@ -2,7 +2,6 @@ package onvif
 
 import (
 	URL "net/url"
-
 	"qonvif/apis/common"
 	"qonvif/configs"
 	"qonvif/services/onvif"
@@ -25,7 +24,27 @@ func addAuthtoUrl(url, username, password string) string {
 }
 
 func ListDevices(c *gin.Context) {
-	common.JSONHandler(c, 1, "devices", configs.Config.Devices)
+	devices := make([]map[string]any, 0)
+	for _, device := range configs.Config.Devices {
+		client, err := onvif.NewClient(device.Name)
+		if err != nil {
+			common.JSONHandler(c, 0, "new client error: "+err.Error(), []any{})
+			return
+		}
+		data, err := client.GetDeviceData()
+		if err != nil {
+			common.JSONHandler(c, 0, "get device info error: "+err.Error(), []any{})
+			return
+		}
+
+		dev := map[string]any{
+			"profile": device,
+			"details": data,
+		}
+		devices = append(devices, dev)
+	}
+
+	common.JSONHandler(c, 1, "devices", devices)
 }
 
 func ListDeviceInfo(c *gin.Context) {

@@ -162,6 +162,24 @@ func (basic *OnvifBasic) usePTZAbsoluteMove(dev *goonvif.Device, x, y float64) e
 	return nil
 }
 
+func (basic *OnvifBasic) usePTZRelativeMove(dev *goonvif.Device, x, y float64) error {
+	_, err := handleMethod(dev, ptz.RelativeMove{
+		Translation: onvif.PTZVector{
+			PanTilt: onvif.Vector2D{
+				X:     x,
+				Y:     y,
+				Space: xsd.AnyURI("DS"),
+			},
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (basic *OnvifBasic) getPTZStatus() (*PtzStatusData, error) {
 	body, err := handleMethod(basic.device, ptz.GetStatus{})
 	if err != nil {
@@ -178,8 +196,16 @@ func (basic *OnvifBasic) getPTZStatus() (*PtzStatusData, error) {
 	}, nil
 }
 
-func (basic *OnvifBasic) PTZGoToHome() (*PtzStatusData, error) {
-	err := basic.usePTZAbsoluteMove(basic.device, 1, 0)
+func (basic *OnvifBasic) PTZStatus() (*PtzStatusData, error) {
+	ptzStatus, err := basic.getPTZStatus()
+	if err != nil {
+		return nil, err
+	}
+	return ptzStatus, nil
+}
+
+func (basic *OnvifBasic) PTZGoToAnyAbsolute(x, y float64) (*PtzStatusData, error) {
+	err := basic.usePTZAbsoluteMove(basic.device, x, y)
 	if err != nil {
 		return nil, err
 	}
@@ -191,8 +217,8 @@ func (basic *OnvifBasic) PTZGoToHome() (*PtzStatusData, error) {
 	return ptzStatus, nil
 }
 
-func (basic *OnvifBasic) PTZGoToAny(x, y float64) (*PtzStatusData, error) {
-	err := basic.usePTZAbsoluteMove(basic.device, x, y)
+func (basic *OnvifBasic) PTZGoToAnyRelative(x, y float64) (*PtzStatusData, error) {
+	err := basic.usePTZRelativeMove(basic.device, x, y)
 	if err != nil {
 		return nil, err
 	}

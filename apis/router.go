@@ -50,7 +50,9 @@ func Run() error {
 		api.GET("/device/info", middle.ApiKeyAuth(), onvif.ListDeviceInfo)
 		api.GET("/device/profile", middle.ApiKeyAuth(), onvif.ListDeviceProfile)
 		api.GET("/device/streamurl", middle.ApiKeyAuth(), onvif.ListDeviceStreamurl)
-		api.POST("/device/ptz/control", middle.ApiKeyAuth(), onvif.DeviceControl)
+		api.GET("/device/ptz/status", middle.ApiKeyAuth(), onvif.Status)
+		api.POST("/device/ptz/move/absolute", middle.ApiKeyAuth(), onvif.AbsoluteMove)
+		api.POST("/device/ptz/move/relative", middle.ApiKeyAuth(), onvif.RelativeMove)
 		api.POST("/play", middle.ApiKeyAuth(), player.PlayStram)
 	}
 
