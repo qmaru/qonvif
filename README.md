@@ -1,9 +1,15 @@
 # qonvif
 
-## Run api
+## Build a server
 
 ```shell
-go run main.go server
+go build --tags server
+```
+
+## Build a wails
+
+```shell
+wails build --tags ui -ldflags='-s -w'
 ```
 
 ## Run docker
@@ -64,7 +70,7 @@ curl --request GET \
 
 ```shell
 curl --request POST \
-  --url http://127.0.0.1:8373/api/onvif/device/ptz/control \
+  --url http://127.0.0.1:8373/api/onvif/device/ptz/move/absolute \
   --header 'X-API-Key: api_key' \
   --header 'content-type: application/json' \
   --data '{
@@ -75,6 +81,14 @@ curl --request POST \
   }
 }
 '
+```
+
+### Get ptz status
+
+```shell
+curl --request GET \
+  --url 'http://127.0.0.1:8373/api/onvif/device/ptz/status?name=Living' \
+  --header 'X-API-Key: 123456'
 ```
 
 ### Play Stream

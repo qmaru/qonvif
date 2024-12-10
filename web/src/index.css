@@ -1,0 +1,19 @@
+html,
+body {
+  width           : 100%;
+  margin          : 0;
+  padding         : 0;
+  user-select     : none;
+  background-color: #f1f2f5;
+}
+
+a {
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #181818;
+    color           : #bfbfbf;
+  }
+}

@@ -1,0 +1,7 @@
+.git*
+**/*.json
+*.md
+*.exe
+web/*
+ui/*
+build/*

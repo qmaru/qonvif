@@ -9,7 +9,7 @@ WORKDIR /usr/src
 RUN go mod download
 RUN gover=`go version | awk '{print $3,$4}'` \
     && sed -i "s#COMMIT_GOVER#$gover#g" utils/version.go \
-    && CGO_ENABLED=0 go build -ldflags="-s -w -extldflags='static'" -trimpath -o app \
+    && CGO_ENABLED=0 go build --tags server -ldflags="-s -w -extldflags='static'" -trimpath -o app \
     && upx --best --lzma app
 
 FROM scratch AS prod
