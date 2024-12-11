@@ -94,12 +94,13 @@ interface PTZStatusResponse extends CommonResponse {
 }
 
 const ControlInput = (props: any) => {
-  const { startDecorator, defaultValue, onChange, step, max, min } = props
+  const { startDecorator, value, defaultValue, onChange, step, max, min } = props
   return (
     <Input
       fullWidth
       type="number"
       slotProps={{ input: { step: step ? step : 0.001, max: max ? max : 1, min: min ? min : -1 } }}
+      value={value}
       defaultValue={defaultValue}
       onChange={onChange}
       startDecorator={startDecorator}
@@ -289,6 +290,8 @@ export default function Index() {
       const jData = await ApiOnvifDevicePtzMoveAbsolute(apikey, data)
       if (jData.status === 1) {
         notify(`移动到 (${x},${y}) 缩放 ${z} 倍`, "primary")
+        SetXDefaultValue(jData.data.x)
+        SetYDefaultValue(jData.data.y)
       } else {
         notify("操作出错", "danger")
       }
@@ -328,6 +331,8 @@ export default function Index() {
           }
         }
         notify(message, "primary")
+        SetXDefaultValue(jData.data.x)
+        SetYDefaultValue(jData.data.y)
       } else {
         notify("操作出错", "danger")
       }
@@ -416,6 +421,7 @@ export default function Index() {
                 <Stack spacing={1} sx={{ justifyContent: "center", alignItems: "center" }}>
                   <PanelBox title="相对坐标">
                     <ControlInput
+                      value={XStepValue}
                       defaultValue={XStepValue}
                       onChange={XStepValueChange}
                       startDecorator="STEP"
@@ -428,6 +434,7 @@ export default function Index() {
                     />
 
                     <ControlInput
+                      value={YStepValue}
                       defaultValue={YStepValue}
                       onChange={YStepValueChange}
                       startDecorator="STEP"
@@ -442,6 +449,7 @@ export default function Index() {
 
                   <PanelBox title="缩放大小">
                     <ControlInput
+                      value={ZStepValue}
                       defaultValue={ZStepValue}
                       onChange={ZStepValueChange}
                       startDecorator="STEP"
@@ -455,11 +463,13 @@ export default function Index() {
                   <PanelBox title="绝对坐标">
                     <ControlInput
                       defaultValue={XDefaultValue}
+                      value={XDefaultValue}
                       onChange={XDefaultValueChange}
                       startDecorator="X"
                     />
                     <ControlInput
                       defaultValue={YDefaultValue}
+                      value={YDefaultValue}
                       onChange={YDefaultValueChange}
                       startDecorator="Y"
                     />
