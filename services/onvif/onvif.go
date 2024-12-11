@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"qonvif/configs"
-	"qonvif/configs/models"
+	configModels "qonvif/configs/models"
+
+	"qonvif/services/onvif/models"
 
 	goonvif "github.com/use-go/onvif"
 	"github.com/use-go/onvif/device"
@@ -20,7 +22,7 @@ type OnvifBasic struct {
 }
 
 func NewClient(name string) (*OnvifBasic, error) {
-	var deviceInfo models.DeviceInfo
+	var deviceInfo configModels.DeviceInfo
 
 	for _, d := range configs.Config.Devices {
 		if d.Name == name {
@@ -40,14 +42,14 @@ func NewClient(name string) (*OnvifBasic, error) {
 	}, nil
 }
 
-func (basic *OnvifBasic) getDeviceInformation(dev *goonvif.Device, method any) (*DeviceInfo, error) {
+func (basic *OnvifBasic) getDeviceInformation(dev *goonvif.Device, method any) (*models.DeviceInfo, error) {
 	body, err := handleMethod(dev, method)
 	if err != nil {
 		return nil, err
 	}
 
 	xmlData := body.SelectElement("tds:GetDeviceInformationResponse")
-	return &DeviceInfo{
+	return &models.DeviceInfo{
 		Manufacturer:    xmlData.SelectElement("tds:Manufacturer").Text(),
 		Model:           xmlData.SelectElement("tds:Model").Text(),
 		FirmwareVersion: xmlData.SelectElement("tds:FirmwareVersion").Text(),
@@ -56,7 +58,7 @@ func (basic *OnvifBasic) getDeviceInformation(dev *goonvif.Device, method any) (
 	}, nil
 }
 
-func (basic *OnvifBasic) getNetworkInterfaces(dev *goonvif.Device, method any) (*DeviceNetwork, error) {
+func (basic *OnvifBasic) getNetworkInterfaces(dev *goonvif.Device, method any) (*models.DeviceNetwork, error) {
 	body, err := handleMethod(dev, method)
 	if err != nil {
 		return nil, err
@@ -66,24 +68,24 @@ func (basic *OnvifBasic) getNetworkInterfaces(dev *goonvif.Device, method any) (
 	xmlInterface := xmlData.SelectElement("tds:NetworkInterfaces")
 	xmlInterfaceInfo := xmlInterface.SelectElement("tt:Info")
 
-	return &DeviceNetwork{
+	return &models.DeviceNetwork{
 		Iface:   xmlInterfaceInfo.SelectElement("Name").Text(),
 		MacAddr: xmlInterfaceInfo.SelectElement("HwAddress").Text(),
 	}, nil
 }
 
-func (basic *OnvifBasic) getProfiles(dev *goonvif.Device, method any) ([]*ProfileData, error) {
+func (basic *OnvifBasic) getProfiles(dev *goonvif.Device, method any) ([]*models.ProfileData, error) {
 	body, err := handleMethod(dev, method)
 	if err != nil {
 		return nil, err
 	}
 
-	profileData := make([]*ProfileData, 0)
+	profileData := make([]*models.ProfileData, 0)
 
 	xmlData := body.SelectElement("trt:GetProfilesResponse")
 	xmlProfiles := xmlData.SelectElements("trt:Profiles")
 	for _, xmlProfile := range xmlProfiles {
-		profile := &ProfileData{
+		profile := &models.ProfileData{
 			Name:  xmlProfile.SelectElement("tt:Name").Text(),
 			Token: xmlProfile.SelectAttr("token").Value,
 		}
@@ -92,7 +94,7 @@ func (basic *OnvifBasic) getProfiles(dev *goonvif.Device, method any) ([]*Profil
 	return profileData, nil
 }
 
-func (basic *OnvifBasic) getStreamUri(dev *goonvif.Device, method any) (*StreamData, error) {
+func (basic *OnvifBasic) getStreamUri(dev *goonvif.Device, method any) (*models.StreamUriData, error) {
 	body, err := handleMethod(dev, method)
 	if err != nil {
 		return nil, err
@@ -101,12 +103,30 @@ func (basic *OnvifBasic) getStreamUri(dev *goonvif.Device, method any) (*StreamD
 	xmlData := body.SelectElement("trt:GetStreamUriResponse")
 	xmlMediaUri := xmlData.SelectElement("trt:MediaUri")
 
-	return &StreamData{
+	return &models.StreamUriData{
 		Url: xmlMediaUri.SelectElement("tt:Uri").Text(),
 	}, nil
 }
 
-func (basic *OnvifBasic) GetDeviceData() (*DeviceData, error) {
+func (basic *OnvifBasic) getPTZStatus() (*models.PtzStatusData, error) {
+	body, err := handleMethod(basic.device, ptz.GetStatus{})
+	if err != nil {
+		return nil, err
+	}
+
+	xmlData := body.SelectElement("tptz:GetStatusResponse")
+	xmlStatus := xmlData.SelectElement("tptz:PTZStatus")
+	xmlPosition := xmlStatus.SelectElement("tt:Position")
+	xmlPanTilt := xmlPosition.SelectElement("tt:PanTilt")
+	xmlZoom := xmlPosition.SelectElement("tt:Zoom")
+	return &models.PtzStatusData{
+		X: xmlPanTilt.SelectAttr("x").Value,
+		Y: xmlPanTilt.SelectAttr("y").Value,
+		Z: xmlZoom.SelectAttr("x").Value,
+	}, nil
+}
+
+func (basic *OnvifBasic) GetDeviceData() (*models.DeviceData, error) {
 	deviceInfo, err := basic.getDeviceInformation(basic.device, device.GetDeviceInformation{})
 	if err != nil {
 		return nil, err
@@ -118,7 +138,7 @@ func (basic *OnvifBasic) GetDeviceData() (*DeviceData, error) {
 	}
 	deviceNetwork.Addr = basic.xAddr
 
-	deviceData := &DeviceData{
+	deviceData := &models.DeviceData{
 		Info:    *deviceInfo,
 		Network: *deviceNetwork,
 	}
@@ -126,11 +146,11 @@ func (basic *OnvifBasic) GetDeviceData() (*DeviceData, error) {
 	return deviceData, nil
 }
 
-func (basic *OnvifBasic) GetProfiles() ([]*ProfileData, error) {
+func (basic *OnvifBasic) GetProfiles() ([]*models.ProfileData, error) {
 	return basic.getProfiles(basic.device, media.GetProfiles{})
 }
 
-func (basic *OnvifBasic) GetStreamUri(token string) (*StreamData, error) {
+func (basic *OnvifBasic) GetStreamUri(token string) (*models.StreamUriData, error) {
 	method := media.GetStreamUri{
 		StreamSetup: onvif.StreamSetup{
 			Stream: "RTP_unicast",
@@ -144,88 +164,61 @@ func (basic *OnvifBasic) GetStreamUri(token string) (*StreamData, error) {
 	return basic.getStreamUri(basic.device, method)
 }
 
-func (basic *OnvifBasic) usePTZAbsoluteMove(dev *goonvif.Device, x, y float64) error {
-	_, err := handleMethod(dev, ptz.AbsoluteMove{
+func (basic *OnvifBasic) setPTZPanTilt(x, y float64) onvif.Vector2D {
+	return onvif.Vector2D{
+		X:     x,
+		Y:     y,
+		Space: xsd.AnyURI("DS"),
+	}
+}
+
+func (basic *OnvifBasic) setPTZZoom(z float64) onvif.Vector1D {
+	return onvif.Vector1D{
+		X:     z,
+		Space: xsd.AnyURI("DS"),
+	}
+}
+
+func (basic *OnvifBasic) PTZStatus() (*models.PtzStatusData, error) {
+	return basic.getPTZStatus()
+}
+
+// PTZGoToAnyAbsolute
+//
+//	x: horizontal
+//	y: vertical
+//	z: Zoom
+func (basic *OnvifBasic) PTZGoToAnyAbsolute(x, y, z float64) (*models.PtzStatusData, error) {
+	_, err := handleMethod(basic.device, ptz.AbsoluteMove{
 		Position: onvif.PTZVector{
-			PanTilt: onvif.Vector2D{
-				X:     x,
-				Y:     y,
-				Space: xsd.AnyURI("DS"),
-			},
+			PanTilt: basic.setPTZPanTilt(x, y),
+			Zoom:    basic.setPTZZoom(z),
 		},
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return basic.getPTZStatus()
 }
 
-func (basic *OnvifBasic) usePTZRelativeMove(dev *goonvif.Device, x, y float64) error {
-	_, err := handleMethod(dev, ptz.RelativeMove{
+// PTZGoToAnyRelative
+//
+//	x: horizontal
+//	y: vertical
+//	z: Zoom
+func (basic *OnvifBasic) PTZGoToAnyRelative(x, y, z float64) (*models.PtzStatusData, error) {
+	_, err := handleMethod(basic.device, ptz.RelativeMove{
 		Translation: onvif.PTZVector{
-			PanTilt: onvif.Vector2D{
-				X:     x,
-				Y:     y,
-				Space: xsd.AnyURI("DS"),
-			},
+			PanTilt: basic.setPTZPanTilt(x, y),
+			Zoom:    basic.setPTZZoom(z),
 		},
 	})
 
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (basic *OnvifBasic) getPTZStatus() (*PtzStatusData, error) {
-	body, err := handleMethod(basic.device, ptz.GetStatus{})
-	if err != nil {
 		return nil, err
 	}
 
-	xmlData := body.SelectElement("tptz:GetStatusResponse")
-	xmlStatus := xmlData.SelectElement("tptz:PTZStatus")
-	xmlPosition := xmlStatus.SelectElement("tt:Position")
-	xmlPanTilt := xmlPosition.SelectElement("tt:PanTilt")
-	return &PtzStatusData{
-		X: xmlPanTilt.SelectAttr("x").Value,
-		Y: xmlPanTilt.SelectAttr("y").Value,
-	}, nil
-}
-
-func (basic *OnvifBasic) PTZStatus() (*PtzStatusData, error) {
-	ptzStatus, err := basic.getPTZStatus()
-	if err != nil {
-		return nil, err
-	}
-	return ptzStatus, nil
-}
-
-func (basic *OnvifBasic) PTZGoToAnyAbsolute(x, y float64) (*PtzStatusData, error) {
-	err := basic.usePTZAbsoluteMove(basic.device, x, y)
-	if err != nil {
-		return nil, err
-	}
-
-	ptzStatus, err := basic.getPTZStatus()
-	if err != nil {
-		return nil, err
-	}
-	return ptzStatus, nil
-}
-
-func (basic *OnvifBasic) PTZGoToAnyRelative(x, y float64) (*PtzStatusData, error) {
-	err := basic.usePTZRelativeMove(basic.device, x, y)
-	if err != nil {
-		return nil, err
-	}
-
-	ptzStatus, err := basic.getPTZStatus()
-	if err != nil {
-		return nil, err
-	}
-	return ptzStatus, nil
+	return basic.getPTZStatus()
 }

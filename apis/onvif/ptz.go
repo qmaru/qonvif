@@ -3,18 +3,38 @@ package onvif
 import (
 	"qonvif/apis/common"
 	"qonvif/services/onvif"
+	"qonvif/services/onvif/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-type PtzAxes struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
+func handleMove(c *gin.Context, moveFunc func(client *onvif.OnvifBasic, x, y, z float64) (any, error), message string) {
+	var ptzControl models.PtzControl
 
-type PtzControl struct {
-	Name string  `json:"name"`
-	Axes PtzAxes `json:"axes"`
+	err := c.ShouldBindBodyWithJSON(&ptzControl)
+	if err != nil {
+		common.JSONHandler(c, 0, "control data error: "+err.Error(), []any{})
+		return
+	}
+
+	if ptzControl.Name == "" {
+		common.JSONHandler(c, 0, "device name not found", []any{})
+		return
+	}
+
+	client, err := onvif.NewClient(ptzControl.Name)
+	if err != nil {
+		common.JSONHandler(c, 0, "new client error: "+err.Error(), []any{})
+		return
+	}
+
+	status, err := moveFunc(client, ptzControl.Axes.X, ptzControl.Axes.Y, ptzControl.Axes.Z)
+	if err != nil {
+		common.JSONHandler(c, 0, "move error: "+err.Error(), []any{})
+		return
+	}
+
+	common.JSONHandler(c, 1, message, status)
 }
 
 func Status(c *gin.Context) {
@@ -40,59 +60,13 @@ func Status(c *gin.Context) {
 }
 
 func RelativeMove(c *gin.Context) {
-	var ptzControl PtzControl
-
-	err := c.ShouldBindBodyWithJSON(&ptzControl)
-	if err != nil {
-		common.JSONHandler(c, 0, "control data error: "+err.Error(), []any{})
-		return
-	}
-
-	if ptzControl.Name == "" {
-		common.JSONHandler(c, 0, "device name not found", []any{})
-		return
-	}
-
-	client, err := onvif.NewClient(ptzControl.Name)
-	if err != nil {
-		common.JSONHandler(c, 0, "new client error: "+err.Error(), []any{})
-		return
-	}
-
-	status, err := client.PTZGoToAnyRelative(ptzControl.Axes.X, ptzControl.Axes.Y)
-	if err != nil {
-		common.JSONHandler(c, 0, "move error: "+err.Error(), []any{})
-		return
-	}
-
-	common.JSONHandler(c, 1, "relative move", status)
+	handleMove(c, func(client *onvif.OnvifBasic, x, y, z float64) (any, error) {
+		return client.PTZGoToAnyRelative(x, y, z)
+	}, "relative move")
 }
 
 func AbsoluteMove(c *gin.Context) {
-	var ptzControl PtzControl
-
-	err := c.ShouldBindBodyWithJSON(&ptzControl)
-	if err != nil {
-		common.JSONHandler(c, 0, "control data error: "+err.Error(), []any{})
-		return
-	}
-
-	if ptzControl.Name == "" {
-		common.JSONHandler(c, 0, "device name not found", []any{})
-		return
-	}
-
-	client, err := onvif.NewClient(ptzControl.Name)
-	if err != nil {
-		common.JSONHandler(c, 0, "new client error: "+err.Error(), []any{})
-		return
-	}
-
-	status, err := client.PTZGoToAnyAbsolute(ptzControl.Axes.X, ptzControl.Axes.Y)
-	if err != nil {
-		common.JSONHandler(c, 0, "move error: "+err.Error(), []any{})
-		return
-	}
-
-	common.JSONHandler(c, 1, "absolute move", status)
+	handleMove(c, func(client *onvif.OnvifBasic, x, y, z float64) (any, error) {
+		return client.PTZGoToAnyAbsolute(x, y, z)
+	}, "absolute move")
 }

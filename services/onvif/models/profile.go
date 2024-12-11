@@ -1,4 +1,4 @@
-package onvif
+package models
 
 type ProfileData struct {
 	Name  string `json:"name"`

@@ -1,4 +1,4 @@
-package onvif
+package models
 
 type DeviceInfo struct {
 	Manufacturer    string `json:"manufacturer"`

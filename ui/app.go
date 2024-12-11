@@ -5,18 +5,9 @@ import (
 
 	"qonvif/configs"
 	"qonvif/services/onvif"
+	"qonvif/services/onvif/models"
 	"qonvif/services/player"
 )
-
-type PtzAxes struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
-
-type PtzControl struct {
-	Name string  `json:"name"`
-	Axes PtzAxes `json:"axes"`
-}
 
 // App struct
 type App struct {
@@ -127,7 +118,7 @@ func (a *App) ApiOnvifDevicePtzStatus(apikey, name string) JsonData {
 	return JSONHandler(1, "control", status)
 }
 
-func (a *App) ApiOnvifDevicePtzMoveRelative(apikey string, ptzControl PtzControl) JsonData {
+func (a *App) ApiOnvifDevicePtzMoveRelative(apikey string, ptzControl models.PtzControl) JsonData {
 	if ptzControl.Name == "" {
 		return JSONHandler(0, "device name not found", []any{})
 	}
@@ -137,7 +128,7 @@ func (a *App) ApiOnvifDevicePtzMoveRelative(apikey string, ptzControl PtzControl
 		return JSONHandler(0, "new client error: "+err.Error(), []any{})
 	}
 
-	status, err := client.PTZGoToAnyRelative(ptzControl.Axes.X, ptzControl.Axes.Y)
+	status, err := client.PTZGoToAnyRelative(ptzControl.Axes.X, ptzControl.Axes.Y, ptzControl.Axes.Z)
 	if err != nil {
 		return JSONHandler(0, "move error: "+err.Error(), []any{})
 	}
@@ -145,7 +136,7 @@ func (a *App) ApiOnvifDevicePtzMoveRelative(apikey string, ptzControl PtzControl
 	return JSONHandler(1, "relative move", status)
 }
 
-func (a *App) ApiOnvifDevicePtzMoveAbsolute(apikey string, ptzControl PtzControl) JsonData {
+func (a *App) ApiOnvifDevicePtzMoveAbsolute(apikey string, ptzControl models.PtzControl) JsonData {
 	if ptzControl.Name == "" {
 		return JSONHandler(0, "device name not found", []any{})
 	}
@@ -155,7 +146,7 @@ func (a *App) ApiOnvifDevicePtzMoveAbsolute(apikey string, ptzControl PtzControl
 		return JSONHandler(0, "new client error: "+err.Error(), []any{})
 	}
 
-	status, err := client.PTZGoToAnyAbsolute(ptzControl.Axes.X, ptzControl.Axes.Y)
+	status, err := client.PTZGoToAnyAbsolute(ptzControl.Axes.X, ptzControl.Axes.Y, ptzControl.Axes.Z)
 	if err != nil {
 		return JSONHandler(0, "move error: "+err.Error(), []any{})
 	}
