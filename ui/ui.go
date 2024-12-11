@@ -16,9 +16,9 @@ func Run(assets embed.FS) error {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:         "qonvif",
-		Width:         480,
-		Height:        720,
-		DisableResize: true,
+		DisableResize: false,
+		MinWidth:      800,
+		MinHeight:     720,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

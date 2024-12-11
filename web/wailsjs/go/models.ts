@@ -1,29 +1,9 @@
-export namespace player {
-	
-	export class PlayParas {
-	    url: string;
-	    width: string;
-	    height: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new PlayParas(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.url = source["url"];
-	        this.width = source["width"];
-	        this.height = source["height"];
-	    }
-	}
-
-}
-
-export namespace ui {
+export namespace models {
 	
 	export class PtzAxes {
 	    x: number;
 	    y: number;
+	    z: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new PtzAxes(source);
@@ -33,6 +13,7 @@ export namespace ui {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.x = source["x"];
 	        this.y = source["y"];
+	        this.z = source["z"];
 	    }
 	}
 	export class PtzControl {
@@ -66,6 +47,27 @@ export namespace ui {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace player {
+	
+	export class PlayParas {
+	    url: string;
+	    width: string;
+	    height: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayParas(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.url = source["url"];
+	        this.width = source["width"];
+	        this.height = source["height"];
+	    }
 	}
 
 }

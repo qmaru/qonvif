@@ -19,7 +19,7 @@ import Stack from "@mui/joy/Stack"
 import { useNotify } from "./common"
 import { LeftArrowIcon, RightArrowIcon, UpArrowIcon, DownArrowIcon } from "./icons/svgs"
 
-import { player, ui } from "../../wailsjs/go/models"
+import { player, models } from "../../wailsjs/go/models"
 import { ApiAuthCheck, ApiOnvifDevices, ApiOnvifDeviceProfile, ApiOnvifDeviceStreamurl, ApiOnvifPlay, ApiOnvifDevicePtzStatus, ApiOnvifDevicePtzMoveRelative, ApiOnvifDevicePtzMoveAbsolute } from "../../wailsjs/go/ui/App"
 
 interface CommonResponse {
@@ -93,6 +93,52 @@ interface PTZStatusResponse extends CommonResponse {
   data: PTZStatusData
 }
 
+const ControlInput = (props: any) => {
+  const { startDecorator, defaultValue, onChange, step, max, min } = props
+  return (
+    <Input
+      fullWidth
+      type="number"
+      slotProps={{ input: { step: step ? step : 0.001, max: max ? max : 1, min: min ? min : -1 } }}
+      defaultValue={defaultValue}
+      onChange={onChange}
+      startDecorator={startDecorator}
+    />
+  )
+}
+
+const ControlButtons = (props: any) => {
+  const { positiveIcon, negativeIcon, onPositiveMove, onNegativeMove } = props
+  return (
+    <>
+      <Stack direction="row" spacing={1} sx={{ justifyContent: "center", alignItems: "center" }}>
+        <IconButton onClick={onNegativeMove}>
+          {negativeIcon}
+        </IconButton>
+        <IconButton onClick={onPositiveMove}>
+          {positiveIcon}
+        </IconButton>
+      </Stack>
+    </>
+  )
+}
+
+const PanelBox = (props: any) => {
+  const { title, children } = props
+  return (
+    <Box sx={{ width: 200 }}>
+      <Typography sx={{ p: 1 }} level="body-lg">{title}</Typography>
+      <Stack spacing={1} sx={{ justifyContent: "center", alignItems: "center" }}>
+        {children}
+      </Stack>
+    </Box>
+  )
+}
+
+const isValidInput = (value: number) => {
+  return !isNaN(value) && Math.abs(value) <= 1
+}
+
 export default function Index() {
   const navigate = useNavigate()
   const { notify, Notifybar } = useNotify()
@@ -109,6 +155,7 @@ export default function Index() {
 
   const [XStepValue, SetXStepValue] = useState<number>(0.1)
   const [YStepValue, SetYStepValue] = useState<number>(0.1)
+  const [ZStepValue, SetZStepValue] = useState<number>(0)
   const [XDefaultValue, SetXDefaultValue] = useState<number>(0)
   const [YDefaultValue, SetYDefaultValue] = useState<number>(0)
 
@@ -118,6 +165,10 @@ export default function Index() {
 
   const YStepValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     SetYStepValue(Number(e.target.value))
+  }
+
+  const ZStepValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    SetZStepValue(Number(e.target.value))
   }
 
   const XDefaultValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +224,9 @@ export default function Index() {
       const ptzStatus: PTZStatusData = await PTZStatus(device.profile.name)
       SetXDefaultValue(ptzStatus.x)
       SetYDefaultValue(ptzStatus.y)
+      SetXStepValue(0.1)
+      SetYStepValue(0.1)
+      SetZStepValue(0)
 
       const jData = await ApiOnvifDeviceStreamurl(apikey, device.profile.name, profile.token, device.profile.device.username, device.profile.device.password)
       if (jData.status === 1) {
@@ -211,35 +265,47 @@ export default function Index() {
     return { x: 0, y: 0 }
   }
 
-  const PTZAbsoluteMove = async (x: number, y: number) => {
-    if (Math.abs(x) > 1 || Math.abs(y) > 1) {
-      notify("位移距离必须在 0 ~ 1 之间", "danger")
+  const PTZAbsoluteMove = async (x: number, y: number, z: number) => {
+    if (!isValidInput(x) || !isValidInput(y)) {
+      notify("位移距离必须在 -1 ~ 1 之间", "danger")
       return
     }
 
-    let data = new (ui.PtzControl)
+    if (z < 0) {
+      notify("缩放不能小于0", "danger")
+      return
+    }
+
+    let data = new (models.PtzControl)
+    let axes = new (models.PtzAxes)
+    axes.x = Number(x)
+    axes.y = Number(y)
+    axes.z = Number(z)
+
     data.name = streamName
-    data.axes.x = Number(x)
-    data.axes.y = Number(y)
+    data.axes = axes
 
     if (apikey) {
       const jData = await ApiOnvifDevicePtzMoveAbsolute(apikey, data)
       if (jData.status === 1) {
-        notify(`移动距离 X=${x} Y=${y}`, "primary")
+        notify(`移动到 (${x},${y}) 缩放 ${z} 倍`, "primary")
+      } else {
+        notify("操作出错", "danger")
       }
     }
   }
 
   const PTZRelativeMove = async (x: number, y: number) => {
-    if (Math.abs(x) > 1 || Math.abs(y) > 1) {
-      notify("位移距离必须在 0 ~ 1 之间", "danger")
+    if (!isValidInput(x) || !isValidInput(y)) {
+      notify("位移距离必须在 -1 ~ 1 之间", "danger")
       return
     }
 
-    let data = new (ui.PtzControl)
-    let axes = new (ui.PtzAxes)
+    let data = new (models.PtzControl)
+    let axes = new (models.PtzAxes)
     axes.x = Number(x)
     axes.y = Number(y)
+    axes.z = 0
 
     data.name = streamName
     data.axes = axes
@@ -247,7 +313,23 @@ export default function Index() {
     if (apikey) {
       const jData = await ApiOnvifDevicePtzMoveRelative(apikey, data)
       if (jData.status === 1) {
-        notify(`移动距离 X=${x} Y=${y}`, "primary")
+        let message = ""
+        if (x === 0) {
+          if (y < 0) {
+            message = "向下移动 " + Math.abs(y)
+          } else {
+            message = "向上移动 " + Math.abs(y)
+          }
+        } else if (y === 0) {
+          if (x < 0) {
+            message = "向左移动 " + Math.abs(x)
+          } else {
+            message = "向右移动 " + Math.abs(x)
+          }
+        }
+        notify(message, "primary")
+      } else {
+        notify("操作出错", "danger")
       }
     }
   }
@@ -329,77 +411,61 @@ export default function Index() {
               </Button>
 
               <Box>
-                <Typography sx={{ p: 2 }} level="h3">云台控制</Typography>
+                <Typography sx={{ p: 1 }} level="h3">云台控制</Typography>
 
-                <Box sx={{ width: 240, margin: "0 auto" }}>
-                  <Typography level="body-lg">相对坐标</Typography>
-                  <Stack spacing={2} sx={{ justifyContent: "center", alignItems: "center", pt: 2 }}>
-                    <Stack spacing={2} sx={{ justifyContent: "center", alignItems: "center" }}>
-                      <Input
-                        placeholder="步进"
-                        type="number"
-                        defaultValue={XStepValue}
-                        onChange={XStepValueChange}
-                      />
-                      <Stack direction="row" spacing={2} sx={{ justifyContent: "center", alignItems: "center" }}>
-                        <IconButton onClick={() => PTZRelativeMove(-XStepValue, 0)}>
-                          <LeftArrowIcon color="primary" fontSize="xl4" />
-                        </IconButton>
+                <Stack spacing={1} sx={{ justifyContent: "center", alignItems: "center" }}>
+                  <PanelBox title="相对坐标">
+                    <ControlInput
+                      defaultValue={XStepValue}
+                      onChange={XStepValueChange}
+                      startDecorator="STEP"
+                    />
+                    <ControlButtons
+                      positiveIcon={<RightArrowIcon color="primary" fontSize="xl4" />}
+                      negativeIcon={<LeftArrowIcon color="primary" fontSize="xl4" />}
+                      onPositiveMove={() => PTZRelativeMove(XStepValue, 0)}
+                      onNegativeMove={() => PTZRelativeMove(-XStepValue, 0)}
+                    />
 
-                        <IconButton onClick={() => PTZRelativeMove(XStepValue, 0)}>
-                          <RightArrowIcon color="primary" fontSize="xl4" />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
+                    <ControlInput
+                      defaultValue={YStepValue}
+                      onChange={YStepValueChange}
+                      startDecorator="STEP"
+                    />
+                    <ControlButtons
+                      positiveIcon={<DownArrowIcon color="primary" fontSize="xl4" />}
+                      negativeIcon={<UpArrowIcon color="primary" fontSize="xl4" />}
+                      onPositiveMove={() => PTZRelativeMove(0, -YStepValue)}
+                      onNegativeMove={() => PTZRelativeMove(0, YStepValue)}
+                    />
+                  </PanelBox>
 
-                    <Stack spacing={1} sx={{ justifyContent: "center", alignItems: "center" }}>
-                      <Input
-                        placeholder="步进"
-                        type="number"
-                        defaultValue={YStepValue}
-                        onChange={YStepValueChange}
-                      />
-                      <Stack direction="row" spacing={2} sx={{ justifyContent: "center", alignItems: "center" }}>
-                        <IconButton onClick={() => PTZRelativeMove(0, YStepValue)}>
-                          <UpArrowIcon color="primary" fontSize="xl4" />
-                        </IconButton>
-                        <IconButton onClick={() => PTZRelativeMove(0, -YStepValue)}>
-                          <DownArrowIcon color="primary" fontSize="xl4" />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
-                  </Stack>
-                </Box>
+                  <PanelBox title="缩放大小">
+                    <ControlInput
+                      defaultValue={ZStepValue}
+                      onChange={ZStepValueChange}
+                      startDecorator="STEP"
+                      step={1}
+                      min={0}
+                      max={10}
+                    />
+                    <Button fullWidth onClick={() => PTZAbsoluteMove(XDefaultValue, YDefaultValue, ZStepValue)}>确定</Button>
+                  </PanelBox>
 
-                <Box sx={{ width: 240, margin: "0 auto" }}>
-                  <Typography sx={{ p: 2 }} level="body-lg">绝对坐标</Typography>
-                  <Stack
-                    spacing={2}
-                    sx={{
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Input
-                      fullWidth
-                      placeholder="X"
-                      type="number"
+                  <PanelBox title="绝对坐标">
+                    <ControlInput
                       defaultValue={XDefaultValue}
                       onChange={XDefaultValueChange}
                       startDecorator="X"
                     />
-                    <Input
-                      fullWidth
-                      placeholder="Y"
-                      type="number"
+                    <ControlInput
                       defaultValue={YDefaultValue}
                       onChange={YDefaultValueChange}
                       startDecorator="Y"
                     />
-                    <Button fullWidth onClick={() => PTZAbsoluteMove(XDefaultValue, YDefaultValue)}>确定</Button>
-                  </Stack>
-                </Box>
-
+                    <Button fullWidth onClick={() => PTZAbsoluteMove(XDefaultValue, YDefaultValue, 0)}>确定</Button>
+                  </PanelBox>
+                </Stack>
               </Box>
             </Box>
           </DialogContent>
